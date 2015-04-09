@@ -1,45 +1,16 @@
 package com.zwb.args.dbpratice.event;
 
-import android.util.Log;
-
-import com.zwb.args.dbpratice.exception.NoTableException;
-import com.zwb.args.dbpratice.exception.NoTagException;
+import com.zwb.args.dbpratice.util.LogUtil;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
- * Created by pc on 2015/4/8.
+ * Created by pc on 2015/4/9.
  */
-public class UpdateEvent extends BaseEvent {
+public class UpdateEvent extends BaseDataChangeEvent {
     private Class<?> tableClazz;
-    private Map<Integer, Object> recordMap;
-    private Map<Class<?>, Map<Integer, Object>> tableMap;
-    private int index = 0;
-
-    public UpdateEvent() {
-        recordMap = new HashMap<Integer, Object>();
-        tableMap = new HashMap<Class<?>, Map<Integer, Object>>();
-    }
-
-    public UpdateEvent update(String column, Object value) throws NoTableException {
-        if (tableClazz == null) {
-            throw new NoTableException("There is no table");
-        }
-
-        Object data = getData(column, value);
-        recordMap.put(index, data);
-        tableMap.put(tableClazz, recordMap);
-        index++;
-        return this;
-    }
-
-    public Map<Class<?>, Map<Integer, Object>> getTableData() {
-        return tableMap;
-    }
 
     private <T> Object getData(String column, Object value) {
         Constructor constructor = findBestSuitConstructor(tableClazz);
@@ -54,11 +25,11 @@ public class UpdateEvent extends BaseEvent {
                 }
             }
         } catch (InstantiationException e) {
-            Log.e("UpdateEvent", e.toString());
+            LogUtil.e(e.toString());
         } catch (IllegalAccessException e) {
-            Log.e("UpdateEvent", e.toString());
+            LogUtil.e(e.toString());
         } catch (InvocationTargetException e) {
-            Log.e("UpdateEvent", e.toString());
+            LogUtil.e(e.toString());
         }
         return data;
     }
@@ -85,18 +56,5 @@ public class UpdateEvent extends BaseEvent {
         }
         finalConstructor.setAccessible(true);
         return finalConstructor;
-    }
-
-    public <T> UpdateEvent to(Class<T> clazz) {
-        this.tableClazz = clazz;
-        return this;
-    }
-
-    public void commit(String tag) throws NoTagException {
-        this.tag = tag;
-        this.index = 0;
-        if (tag == null) {
-            throw new NoTagException("There is no tag");
-        }
     }
 }
