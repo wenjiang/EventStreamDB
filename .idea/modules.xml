@@ -1,11 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ProjectModuleManager">
-    <modules>
-      <module fileurl="file://$PROJECT_DIR$/dbPratice.iml" filepath="$PROJECT_DIR$/dbPratice.iml" />
-      <module fileurl="file://$PROJECT_DIR$/eventDB.iml" filepath="$PROJECT_DIR$/eventDB.iml" />
-      <module fileurl="file://$PROJECT_DIR$/eventDB.iml" filepath="$PROJECT_DIR$/eventDB.iml" />
-    </modules>
+    <modules />
   </component>
 </project>
 
