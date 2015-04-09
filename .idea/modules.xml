@@ -5,6 +5,7 @@
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
       <module fileurl="file://$PROJECT_DIR$/dbPratice.iml" filepath="$PROJECT_DIR$/dbPratice.iml" />
       <module fileurl="file://$PROJECT_DIR$/eventDB.iml" filepath="$PROJECT_DIR$/eventDB.iml" />
+      <module fileurl="file://$PROJECT_DIR$/eventDB.iml" filepath="$PROJECT_DIR$/eventDB.iml" />
     </modules>
   </component>
 </project>
