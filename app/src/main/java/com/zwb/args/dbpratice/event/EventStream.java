@@ -10,9 +10,13 @@ import java.util.Map;
 public class EventStream {
     private Map<String, BaseEvent> eventMap;
     private static EventStream stream;
+    private Map<Integer, Object> recordMap;
+    private Map<Class<?>, Map<Integer, Object>> tableMap;
 
     private EventStream() {
         eventMap = new HashMap<String, BaseEvent>();
+        recordMap = new HashMap<Integer, Object>();
+        tableMap = new HashMap<Class<?>, Map<Integer, Object>>();
     }
 
     public static EventStream getInstance() {
@@ -35,5 +39,14 @@ public class EventStream {
 
     public Map<String, BaseEvent> getEventMap() {
         return eventMap;
+    }
+
+    public Map<Integer, Object> getRecordMap() {
+        return recordMap;
+    }
+
+    public <T> void insertData(Class<?> tableClazz, int index, T record) {
+        recordMap.put(index, record);
+        tableMap.put(tableClazz, recordMap);
     }
 }

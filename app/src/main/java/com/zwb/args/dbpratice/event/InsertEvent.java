@@ -1,25 +1,15 @@
 package com.zwb.args.dbpratice.event;
 
 import com.zwb.args.dbpratice.exception.NoTableException;
-import com.zwb.args.dbpratice.exception.NoTagException;
-
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * Created by pc on 2015/4/8.
  */
 public class InsertEvent extends BaseDataChangeEvent {
-    private Class<?> tableClazz;
-    private Map<Integer, Object> recordMap;
-    private Map<Class<?>, Map<Integer, Object>> tableMap;
-    private int index = 0;
-    private EventStream stream;
+    private static int index = 0;
 
     public InsertEvent() {
-        recordMap = new HashMap<Integer, Object>();
-        tableMap = new HashMap<Class<?>, Map<Integer, Object>>();
-        stream = EventStream.getInstance();
+
     }
 
     public <T> InsertEvent insert(T record) throws NoTableException {
@@ -27,30 +17,18 @@ public class InsertEvent extends BaseDataChangeEvent {
             throw new NoTableException("There is no table");
         }
 
-        recordMap.put(index, record);
-        tableMap.put(tableClazz, recordMap);
         QueryEvent queryEvent = new QueryEvent();
         queryEvent.insertRecord(record);
-        queryEvent.setTag(tableClazz.getSimpleName().toLowerCase() + "_query" + "_" + index);
+        queryEvent.setTag(tableClazz.getSimpleName().toLowerCase() + "_query_insert_" + index);
+        stream.insertData(tableClazz, index, record);
         stream.register(queryEvent);
         index++;
         return this;
     }
 
-    public Map<Class<?>, Map<Integer, Object>> getTableData() {
-        return tableMap;
-    }
-
+    @Override
     public <T> InsertEvent to(Class<T> clazz) {
         this.tableClazz = clazz;
         return this;
-    }
-
-    public void commit(String tag) throws NoTagException {
-        this.tag = tag;
-        this.index = 0;
-        if (tag == null) {
-            throw new NoTagException("There is no tag");
-        }
     }
 }
