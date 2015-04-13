@@ -26,14 +26,18 @@ public class DatabaseCache {
     private String updateTag;
     private String insertTag;
     private Object queryValue;
-    private Map<String, BaseEvent> eventMap;
-    private Set<String> tagSet;
     private String queryColumn;
     private String queryTag;
+    private Set<String> insertTagSet;
+    private Set<String> updateTagSet;
+    private Map<String, BaseEvent> insertEventMap;
+    private Map<String, BaseEvent> updateEventMap;
 
     private DatabaseCache() {
-        eventMap = EventStream.getInstance().getEventMap();
-        tagSet = eventMap.keySet();
+        insertEventMap = EventStream.getInstance().getInsertEventMap();
+        insertTagSet = insertEventMap.keySet();
+        updateEventMap = EventStream.getInstance().getUpdateEventMap();
+        updateTagSet = updateEventMap.keySet();
     }
 
     public static DatabaseCache getInstance() {
@@ -84,35 +88,31 @@ public class DatabaseCache {
         List<T> records = new ArrayList<T>();
         Map<Integer, T> recordMap = new HashMap<Integer, T>();
         List<T> dataList = new ArrayList<T>();
-        for (String tag : tagSet) {
+
+        for (String tag : insertTagSet) {
             int index = getIndex(tag);
-            QueryEvent queryEvent = (QueryEvent) eventMap.get(tag);
-            if (tag.contains(insertTag)) {
-                T object = (T) queryEvent.getRecord();
-                records.add(object);
-                isInsert = true;
-                recordMap.put(index, object);
-                continue;
+            QueryEvent queryEvent = (QueryEvent) insertEventMap.get(tag);
+            T object = (T) queryEvent.getRecord();
+            records.add(object);
+            isInsert = true;
+            recordMap.put(index, object);
+        }
+
+        for (String tag : updateTagSet) {
+            int index = getIndex(tag);
+            QueryEvent queryEvent = (QueryEvent) updateEventMap.get(tag);
+            String column = getColumn(tag);
+            Object data = queryEvent.getRecord();
+            Object originData = recordMap.get(index);
+            Field[] fields = data.getClass().getDeclaredFields();
+            for (Field field : fields) {
+                if (recordMap.containsKey(index) && field.getName().equals(column)) {
+                    T newData = (T) setValueFromOther(originData, data, field.getName());
+                    recordMap.put(index, newData);
+                }
             }
         }
 
-        for (String tag : tagSet) {
-            int index = getIndex(tag);
-            QueryEvent queryEvent = (QueryEvent) eventMap.get(tag);
-            if (tag.contains(updateTag)) {
-                String column = getColumn(tag);
-                Object data = queryEvent.getRecord();
-                Object originData = recordMap.get(index);
-                Field[] fields = data.getClass().getDeclaredFields();
-                for (Field field : fields) {
-                    if (recordMap.containsKey(index) && field.getName().equals(column)) {
-                        T newData = (T) setValueFromOther(originData, data, field.getName());
-                        recordMap.put(index, newData);
-                    }
-                }
-                continue;
-            }
-        }
         if (!isInsert) {
             throw new NoTagException("There is no event match the tag");
         }
@@ -167,7 +167,6 @@ public class DatabaseCache {
                 }
             }
         }
-
         return dataList;
     }
 
@@ -176,32 +175,26 @@ public class DatabaseCache {
         boolean isInsert = false;
         List<Object> records = new ArrayList<Object>();
         Map<Integer, Object> recordMap = new HashMap<Integer, Object>();
-        for (String tag : tagSet) {
+        for (String tag : insertTagSet) {
             int index = getIndex(tag);
-            QueryEvent queryEvent = (QueryEvent) eventMap.get(tag);
-            if (tag.contains(insertTag)) {
-                Object object = queryEvent.getRecord();
-                records.add(object);
-                isInsert = true;
-                recordMap.put(index, object);
-                continue;
-            }
+            QueryEvent queryEvent = (QueryEvent) insertEventMap.get(tag);
+            T object = (T) queryEvent.getRecord();
+            records.add(object);
+            isInsert = true;
+            recordMap.put(index, object);
         }
 
-        for (String tag : tagSet) {
+        for (String tag : updateTagSet) {
             int index = getIndex(tag);
-            QueryEvent queryEvent = (QueryEvent) eventMap.get(tag);
-            if (tag.contains(updateTag)) {
-                Object data = queryEvent.getRecord();
-                Object originData = recordMap.get(index);
-                Field[] fields = data.getClass().getDeclaredFields();
-                for (Field field : fields) {
-                    if (recordMap.containsKey(index)) {
-                        Object newData = setValueFromOther(originData, data, field.getName());
-                        recordMap.put(index, newData);
-                    }
+            QueryEvent queryEvent = (QueryEvent) updateEventMap.get(tag);
+            Object data = queryEvent.getRecord();
+            Object originData = recordMap.get(index);
+            Field[] fields = data.getClass().getDeclaredFields();
+            for (Field field : fields) {
+                if (recordMap.containsKey(index)) {
+                    Object newData = setValueFromOther(originData, data, field.getName());
+                    recordMap.put(index, newData);
                 }
-                continue;
             }
         }
 
@@ -229,20 +222,7 @@ public class DatabaseCache {
             if ((originField.getName()).equals(column)) {
                 String type = originField.getType().getSimpleName();
                 try {
-                    if (type.equals("String") || type.contains("String")) {
-                        String columnData = (String) updateField.get(updateData);
-                        originField.set(originData, columnData);
-                    } else if (type.equals("Integer") || type.equals("int")) {
-                        originField.set(originData, updateField.getInt(updateData));
-                    } else if (type.equals("Long") || type.equals("long")) {
-                        originField.set(originData, updateField.getLong(updateData));
-                    } else if (type.equals("Double") || type.equals("double")) {
-                        originField.set(originData, updateField.getDouble(updateData));
-                    } else if (type.equals("Float") || type.equals("float")) {
-                        originField.set(originData, updateField.getFloat(updateData));
-                    } else if (type.equals("Short") || type.equals("short")) {
-                        originField.set(originData, updateField.getShort(updateData));
-                    }
+                    originField.set(originData, getFieldValue(updateData, updateField, type));
                 } catch (IllegalAccessException e) {
                     LogUtil.e(e.toString());
                 }
@@ -283,5 +263,27 @@ public class DatabaseCache {
         String firstChar = column.substring(0, 1);
         String methodName = "get" + firstChar.toUpperCase() + column.substring(1, column.length());
         return methodName;
+    }
+
+    private <T> Object getFieldValue(T obj, Field field, String type) {
+        Object data = null;
+        try {
+            if (type.equals("String") || type.contains("String")) {
+                data = field.get(obj);
+            } else if (type.equals("Integer") || type.equals("int")) {
+                data = field.getInt(obj);
+            } else if (type.equals("Long") || type.equals("long")) {
+                data = field.getLong(obj);
+            } else if (type.equals("Double") || type.equals("double")) {
+                data = field.getDouble(obj);
+            } else if (type.equals("Float") || type.equals("float")) {
+                data = field.getFloat(obj);
+            } else if (type.equals("Short") || type.equals("short")) {
+                data = field.getShort(obj);
+            }
+        } catch (IllegalAccessException e) {
+            LogUtil.e(e.toString());
+        }
+        return data;
     }
 }

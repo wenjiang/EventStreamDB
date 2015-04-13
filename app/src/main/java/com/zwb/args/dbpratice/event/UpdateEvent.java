@@ -138,7 +138,7 @@ public class UpdateEvent extends BaseDataChangeEvent {
             QueryEvent queryEvent = new QueryEvent();
             queryEvent.insertRecord(getData(column, value));
             queryEvent.setTag(tableClazz.getSimpleName().toLowerCase() + "_query_update_" + column + "_" + indexValue);
-            stream.register(queryEvent);
+            stream.registerUpdateEvent(queryEvent);
         }
         return this;
     }

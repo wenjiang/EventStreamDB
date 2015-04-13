@@ -27,7 +27,7 @@ public class SampleActivity extends ActionBarActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        for (int i = 0; i < 1000; i++) {
+        for (int i = 0; i < 100; i++) {
             InsertEvent insertEvent = new InsertEvent();
             Status status = new Status();
             status.setName("张三");
@@ -41,23 +41,19 @@ public class SampleActivity extends ActionBarActivity {
 
         UpdateEvent updateEvent = new UpdateEvent();
         updateEvent.to(Status.class).where("id", "01").update("name", "李四");
-        UpdateEvent updateEvent1 = new UpdateEvent();
-        updateEvent1.to(Status.class).where("name", "李四").update("id", "02");
 
         DatabaseCache cache = DatabaseCache.getInstance();
         tvName = (TextView) findViewById(R.id.tv_name);
-        long start = System.currentTimeMillis();
         List<Status> statusList = null;
         try {
-            statusList = cache.from(Status.class).where("id", "02").find();
+            statusList = cache.from(Status.class).where("id", "01").find();
         } catch (NoTagException e) {
             LogUtil.e(e.toString());
         } catch (NoRecordException e) {
             LogUtil.e(e.toString());
         }
 
-        long end = System.currentTimeMillis();
-        LogUtil.e("所花的时间:" + (end - start));
+        tvName.setText(statusList.get(0).getName());
     }
 
 

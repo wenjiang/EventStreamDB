@@ -9,6 +9,8 @@ import java.util.Map;
  */
 public class EventStream {
     private Map<String, BaseEvent> eventMap;
+    private Map<String, BaseEvent> insertEventMap;
+    private Map<String, BaseEvent> updateEventMap;
     private static EventStream stream;
     private Map<Integer, Object> recordMap;
     private Map<Class<?>, Map<Integer, Object>> tableMap;
@@ -17,6 +19,8 @@ public class EventStream {
         eventMap = new HashMap<String, BaseEvent>();
         recordMap = new HashMap<Integer, Object>();
         tableMap = new HashMap<Class<?>, Map<Integer, Object>>();
+        insertEventMap = new HashMap<String, BaseEvent>();
+        updateEventMap = new HashMap<String, BaseEvent>();
     }
 
     public static EventStream getInstance() {
@@ -29,6 +33,22 @@ public class EventStream {
 
     public void register(BaseEvent event) {
         eventMap.put(event.getTag(), event);
+    }
+
+    public void registerInsertEvent(BaseEvent event) {
+        insertEventMap.put(event.getTag(), event);
+    }
+
+    public Map<String, BaseEvent> getInsertEventMap() {
+        return insertEventMap;
+    }
+
+    public void registerUpdateEvent(BaseEvent event) {
+        updateEventMap.put(event.getTag(), event);
+    }
+
+    public Map<String, BaseEvent> getUpdateEventMap() {
+        return updateEventMap;
     }
 
     public void registerAll(List<BaseEvent> events) {

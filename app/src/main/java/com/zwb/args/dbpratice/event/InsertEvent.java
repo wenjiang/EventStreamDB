@@ -21,7 +21,7 @@ public class InsertEvent extends BaseDataChangeEvent {
         queryEvent.insertRecord(record);
         queryEvent.setTag(tableClazz.getSimpleName().toLowerCase() + "_query_insert_" + index);
         stream.insertData(tableClazz, index, record);
-        stream.register(queryEvent);
+        stream.registerInsertEvent(queryEvent);
         index++;
         return this;
     }
