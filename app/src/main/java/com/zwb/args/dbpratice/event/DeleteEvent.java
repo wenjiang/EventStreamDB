@@ -1,6 +1,7 @@
 package com.zwb.args.dbpratice.event;
 
 /**
+ * 删除事件
  * Created by pc on 2015/4/9.
  */
 public class DeleteEvent extends BaseDataChangeEvent {

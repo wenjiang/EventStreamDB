@@ -3,7 +3,6 @@ package com.zwb.args.dbpratice.cache;
 import com.zwb.args.dbpratice.event.BaseEvent;
 import com.zwb.args.dbpratice.event.EventStream;
 import com.zwb.args.dbpratice.event.QueryEvent;
-import com.zwb.args.dbpratice.exception.NoColumnChangeException;
 import com.zwb.args.dbpratice.exception.NoRecordException;
 import com.zwb.args.dbpratice.exception.NoTagException;
 import com.zwb.args.dbpratice.util.LogUtil;
@@ -18,6 +17,7 @@ import java.util.Map;
 import java.util.Set;
 
 /**
+ * 数据缓存，用于提取事件中的数据
  * Created by pc on 2015/4/8.
  */
 public class DatabaseCache {
@@ -40,6 +40,11 @@ public class DatabaseCache {
         updateTagSet = updateEventMap.keySet();
     }
 
+    /**
+     * DatabaseCache的单例方法
+     *
+     * @return DatabaseCache的单例
+     */
     public static DatabaseCache getInstance() {
         if (cache == null) {
             cache = new DatabaseCache();
@@ -48,6 +53,13 @@ public class DatabaseCache {
         return cache;
     }
 
+    /**
+     * 要查询的表
+     *
+     * @param clazz 表对象的class对象
+     * @param <T>   表对象的类型
+     * @return DatabaseCache的单例
+     */
     public <T> DatabaseCache from(Class<T> clazz) {
         this.tableClazz = clazz;
         return this;
@@ -74,6 +86,13 @@ public class DatabaseCache {
 //        return dataList;
 //    }
 
+    /**
+     * where条件的构建
+     *
+     * @param column 列名
+     * @param value  值
+     * @return DatabaseCache的单例
+     */
     public DatabaseCache where(String column, Object value) {
         updateTag = tableClazz.getSimpleName().toLowerCase() + "_query_update_";
         insertTag = tableClazz.getSimpleName().toLowerCase() + "_query_insert_";
@@ -83,6 +102,14 @@ public class DatabaseCache {
         return this;
     }
 
+    /**
+     * 查询所有的数据
+     *
+     * @param <T> 要返回的类型
+     * @return 数据的List
+     * @throws NoTagException
+     * @throws NoRecordException
+     */
     public <T> List<T> find() throws NoTagException, NoRecordException {
         boolean isInsert = false;
         List<T> records = new ArrayList<T>();
@@ -170,7 +197,17 @@ public class DatabaseCache {
         return dataList;
     }
 
-    public <T> T find(String column, Class<T> clazz) throws NoTagException, NoColumnChangeException, NoRecordException {
+    /**
+     * 查询符合某个条件的数据
+     *
+     * @param column 列名
+     * @param clazz  表对象的class对象
+     * @param <T>    表对象的类型
+     * @return 符合条件的数据
+     * @throws NoTagException
+     * @throws NoRecordException
+     */
+    public <T> T find(String column, Class<T> clazz) throws NoTagException, NoRecordException {
         updateTag = tableClazz.getSimpleName().toLowerCase() + "_query_update_" + column;
         boolean isInsert = false;
         List<Object> records = new ArrayList<Object>();
@@ -210,6 +247,15 @@ public class DatabaseCache {
         return (T) getColumnValue(records.get(0), column);
     }
 
+    /**
+     * 更新数据
+     *
+     * @param originData 原先的数据
+     * @param updateData 更新的数据
+     * @param column     列名
+     * @param <T>        数据的类型
+     * @return 更新完数据的原先数据
+     */
     private <T> T setValueFromOther(T originData, T updateData, String column) {
         Field[] originFields = originData.getClass().getDeclaredFields();
         Field[] updateFields = updateData.getClass().getDeclaredFields();
@@ -231,18 +277,37 @@ public class DatabaseCache {
         return originData;
     }
 
+    /**
+     * 获取事件对应的数据的位置
+     *
+     * @param tag 事件的tag
+     * @return 对应数据的位置
+     */
     private int getIndex(String tag) {
         String[] strArr = tag.split("_");
         int index = Integer.valueOf(strArr[strArr.length - 1]);
         return index;
     }
 
+    /**
+     * 获取列名
+     *
+     * @param tag 事件的tag
+     * @return 列名
+     */
     private String getColumn(String tag) {
         String[] strArr = tag.split("_");
         String column = strArr[strArr.length - 2];
         return column;
     }
 
+    /**
+     * 获取列值
+     *
+     * @param data   数据
+     * @param column 列名
+     * @return 列值
+     */
     private Object getColumnValue(Object data, String column) {
         String methodName = getGetMethodName(column);
         Object value = null;
@@ -259,12 +324,27 @@ public class DatabaseCache {
         return value;
     }
 
+    /**
+     * 获取get方法
+     *
+     * @param column 列名
+     * @return get方法的方法名
+     */
     private String getGetMethodName(String column) {
         String firstChar = column.substring(0, 1);
         String methodName = "get" + firstChar.toUpperCase() + column.substring(1, column.length());
         return methodName;
     }
 
+    /**
+     * 获取字段的值
+     *
+     * @param obj   数据
+     * @param field 字段
+     * @param type  类型
+     * @param <T>   数据的类型
+     * @return 字段的值
+     */
     private <T> Object getFieldValue(T obj, Field field, String type) {
         Object data = null;
         try {

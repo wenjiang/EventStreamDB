@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.Set;
 
 /**
+ * 更新事件
  * Created by pc on 2015/4/9.
  */
 public class UpdateEvent extends BaseDataChangeEvent {
@@ -19,6 +20,14 @@ public class UpdateEvent extends BaseDataChangeEvent {
         dataMap = new HashMap<Integer, Object>();
     }
 
+    /**
+     * 获取更新了数据的对象
+     *
+     * @param column 字段名
+     * @param value  值
+     * @param <T>    泛型参数
+     * @return 该字段对应的对象
+     */
     private <T> Object getData(String column, Object value) {
         Constructor constructor = findBestSuitConstructor(tableClazz);
         T data = null;
@@ -71,6 +80,14 @@ public class UpdateEvent extends BaseDataChangeEvent {
         return this;
     }
 
+    /**
+     * where条件的构建
+     *
+     * @param column 列名
+     * @param value  值名
+     * @param <T>    泛型参数
+     * @return UpdateEvent的实例
+     */
     public <T> UpdateEvent where(String column, Object value) {
         dataMap = stream.getRecordMap();
         Set<Integer> indexSet = dataMap.keySet();
@@ -83,6 +100,15 @@ public class UpdateEvent extends BaseDataChangeEvent {
         return this;
     }
 
+    /**
+     * 检查数据中是否有该值
+     *
+     * @param column  列名
+     * @param value   值
+     * @param oldData 原先的数据
+     * @param <T>     泛型参数
+     * @return 是否符合
+     */
     private <T> boolean isValueMatch(String column, Object value, T oldData) {
         Field[] fields = oldData.getClass().getDeclaredFields();
         boolean isMatch = false;
@@ -95,6 +121,15 @@ public class UpdateEvent extends BaseDataChangeEvent {
         return isMatch;
     }
 
+    /**
+     * 检查字段是否符合该值
+     *
+     * @param field 字段
+     * @param value 值
+     * @param data  原先的数据
+     * @param <T>   泛型参数
+     * @return 是否符合
+     */
     private <T> boolean isMatch(Field field, Object value, T data) {
         boolean isMatch = false;
         try {
@@ -132,6 +167,13 @@ public class UpdateEvent extends BaseDataChangeEvent {
         return isMatch;
     }
 
+    /**
+     * 更新数据
+     *
+     * @param column 列名
+     * @param value  值
+     * @return UpdateEvent的实例
+     */
     public UpdateEvent update(String column, String value) {
         Set<Integer> indexSet = dataMap.keySet();
         for (int indexValue : indexSet) {

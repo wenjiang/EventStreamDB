@@ -3,6 +3,7 @@ package com.zwb.args.dbpratice.event;
 import com.zwb.args.dbpratice.exception.NoTableException;
 
 /**
+ * 插入事件
  * Created by pc on 2015/4/8.
  */
 public class InsertEvent extends BaseDataChangeEvent {
@@ -12,6 +13,14 @@ public class InsertEvent extends BaseDataChangeEvent {
 
     }
 
+    /**
+     * 插入数据
+     *
+     * @param record 数据
+     * @param <T>    泛型参数
+     * @return InsertEvent的实例
+     * @throws NoTableException
+     */
     public <T> InsertEvent insert(T record) throws NoTableException {
         if (tableClazz == null) {
             throw new NoTableException("There is no table");

@@ -41,12 +41,14 @@ public class SampleActivity extends ActionBarActivity {
 
         UpdateEvent updateEvent = new UpdateEvent();
         updateEvent.to(Status.class).where("id", "01").update("name", "李四");
+        UpdateEvent updateEvent1 = new UpdateEvent();
+        updateEvent1.to(Status.class).where("name", "李四").update("id", "02");
 
         DatabaseCache cache = DatabaseCache.getInstance();
         tvName = (TextView) findViewById(R.id.tv_name);
         List<Status> statusList = null;
         try {
-            statusList = cache.from(Status.class).where("id", "01").find();
+            statusList = cache.from(Status.class).where("id", "02").find();
         } catch (NoTagException e) {
             LogUtil.e(e.toString());
         } catch (NoRecordException e) {
