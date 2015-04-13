@@ -8,14 +8,15 @@ import android.widget.TextView;
 
 import com.zwb.args.dbpratice.R;
 import com.zwb.args.dbpratice.cache.DatabaseCache;
-import com.zwb.args.dbpratice.event.EventStream;
 import com.zwb.args.dbpratice.event.InsertEvent;
-import com.zwb.args.dbpratice.exception.NoColumnChangeException;
+import com.zwb.args.dbpratice.event.UpdateEvent;
 import com.zwb.args.dbpratice.exception.NoRecordException;
 import com.zwb.args.dbpratice.exception.NoTableException;
 import com.zwb.args.dbpratice.exception.NoTagException;
 import com.zwb.args.dbpratice.model.Status;
 import com.zwb.args.dbpratice.util.LogUtil;
+
+import java.util.List;
 
 
 public class SampleActivity extends ActionBarActivity {
@@ -26,33 +27,33 @@ public class SampleActivity extends ActionBarActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        InsertEvent event = new InsertEvent();
-        Status status = new Status();
-        status.setName("张三");
-        status.setId("01");
-        try {
-            event.to(Status.class).insert(status).commit("status_insert");
-        } catch (NoTableException e) {
-            LogUtil.e(e.toString());
-        } catch (NoTagException e) {
-            LogUtil.e(e.toString());
+        for (int i = 0; i < 100; i++) {
+            InsertEvent insertEvent = new InsertEvent();
+            Status status = new Status();
+            status.setName("张三");
+            status.setId("01");
+            try {
+                insertEvent.to(Status.class).insert(status);
+            } catch (NoTableException e) {
+                LogUtil.e(e.toString());
+            }
         }
 
-        EventStream.getInstance().register(event);
-        DatabaseCache cache = DatabaseCache.getInstance();
+        UpdateEvent updateEvent = new UpdateEvent();
+        updateEvent.to(Status.class).where("id", "01").update("name", "李四");
 
+        DatabaseCache cache = DatabaseCache.getInstance();
         tvName = (TextView) findViewById(R.id.tv_name);
-        String name = null;
+        List<Status> statusList = null;
         try {
-            name = cache.from(Status.class).where("id", "01").find("name", String.class);
+            statusList = cache.from(Status.class).where("id", "01").find();
         } catch (NoTagException e) {
-            LogUtil.e(e.toString());
-        } catch (NoColumnChangeException e) {
             LogUtil.e(e.toString());
         } catch (NoRecordException e) {
             LogUtil.e(e.toString());
         }
-        tvName.setText(name);
+
+        tvName.setText(statusList.get(0).getName());
     }
 
 
