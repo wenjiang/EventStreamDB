@@ -10,6 +10,7 @@ import android.widget.TextView;
 import com.zwb.args.dbpratice.R;
 import com.zwb.args.dbpratice.cache.DatabaseCache;
 import com.zwb.args.dbpratice.event.InsertEvent;
+import com.zwb.args.dbpratice.event.UpdateEvent;
 import com.zwb.args.dbpratice.exception.NoRecordException;
 import com.zwb.args.dbpratice.exception.NoTableException;
 import com.zwb.args.dbpratice.exception.NoTagException;
@@ -44,6 +45,9 @@ public class SampleActivity extends ActionBarActivity {
                 LogUtil.e(e.toString());
             }
         }
+
+        UpdateEvent updateEvent = new UpdateEvent();
+        updateEvent.to(Status.class).where("id", "01").update("name", "你好");
         DatabaseCache cache = DatabaseCache.getInstance(this);
         tvName = (TextView) findViewById(R.id.tv_name);
         List<Status> statusList = null;
