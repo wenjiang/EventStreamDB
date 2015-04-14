@@ -1,17 +1,36 @@
 package com.zwb.args.dbpratice.cache;
 
+import android.content.ContentValues;
+import android.content.Context;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+
+import com.zwb.args.dbpratice.annotation.Column;
+import com.zwb.args.dbpratice.annotation.ColumnType;
+import com.zwb.args.dbpratice.annotation.Table;
+import com.zwb.args.dbpratice.db.BaseSQLiteOpenHelper;
 import com.zwb.args.dbpratice.event.BaseEvent;
 import com.zwb.args.dbpratice.event.EventStream;
+import com.zwb.args.dbpratice.event.InsertEvent;
 import com.zwb.args.dbpratice.event.QueryEvent;
 import com.zwb.args.dbpratice.exception.NoRecordException;
+import com.zwb.args.dbpratice.exception.NoSuchTableException;
+import com.zwb.args.dbpratice.exception.NoTableException;
 import com.zwb.args.dbpratice.exception.NoTagException;
+import com.zwb.args.dbpratice.model.BaseTable;
 import com.zwb.args.dbpratice.util.LogUtil;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -32,12 +51,20 @@ public class DatabaseCache {
     private Set<String> updateTagSet;
     private Map<String, BaseEvent> insertEventMap;
     private Map<String, BaseEvent> updateEventMap;
+    private Context context;
+    private SQLiteDatabase db;
+    private BaseSQLiteOpenHelper helper;
 
-    private DatabaseCache() {
+    private DatabaseCache(Context context) {
+        this.context = context;
         insertEventMap = EventStream.getInstance().getInsertEventMap();
         insertTagSet = insertEventMap.keySet();
         updateEventMap = EventStream.getInstance().getUpdateEventMap();
         updateTagSet = updateEventMap.keySet();
+        if (helper == null) {
+            helper = BaseSQLiteOpenHelper.getInstance(context);
+            db = helper.getWritableDatabase();
+        }
     }
 
     /**
@@ -45,9 +72,9 @@ public class DatabaseCache {
      *
      * @return DatabaseCache的单例
      */
-    public static DatabaseCache getInstance() {
+    public static DatabaseCache getInstance(Context context) {
         if (cache == null) {
-            cache = new DatabaseCache();
+            cache = new DatabaseCache(context);
         }
 
         return cache;
@@ -62,29 +89,82 @@ public class DatabaseCache {
      */
     public <T> DatabaseCache from(Class<T> clazz) {
         this.tableClazz = clazz;
+        updateTag = tableClazz.getSimpleName().toLowerCase() + "_query_update_";
+        insertTag = tableClazz.getSimpleName().toLowerCase() + "_query_insert_";
+        queryTag = tableClazz.getSimpleName().toLowerCase() + "_query";
         return this;
     }
 
-//    public <T> List<T> findAll() throws NoTableException {
-//        if (tableClazz == null) {
-//            throw new NoTableException("There is no table");
-//        }
-//
-//        List<T> dataList = new ArrayList<T>();
-//        for (String tag : tagSet) {
-//            if (tag.contains(tableClazz.getSimpleName().toLowerCase()) && tag.contains("update")) {
-//                Map<Class<?>, Map<Integer, Object>> tableMap = ((InsertEvent) (eventMap.get(tag))).getTableData();
-//                Map<Integer, Object> dataMap = tableMap.get(tableClazz);
-//                Set<Integer> indexSet = dataMap.keySet();
-//                for (Integer index : indexSet) {
-//                    dataList.add((T) dataMap.get(index));
-//                }
-//                break;
-//            }
-//        }
+    /**
+     * 查询所有数据
+     *
+     * @param <T> 查询的表对象的类型
+     * @return 查询的数据的List
+     * @throws NoTableException
+     * @throws NoTagException
+     * @throws NoRecordException
+     */
+    public <T> List<T> findAll() throws NoTableException, NoTagException, NoRecordException {
+        boolean isInsert = false;
+        List<T> records = new ArrayList<T>();
+        Map<Integer, T> recordMap = getInsertRecord(records);
+        if (records.size() > 0) {
+            isInsert = true;
+        }
+        List<T> dataList = new ArrayList<T>();
 
-//        return dataList;
-//    }
+        updateRecord(recordMap);
+
+        if (!isInsert) {
+            throw new NoTagException("There is no event match the tag");
+        }
+
+        if (recordMap.size() <= 0) {
+            throw new NoRecordException("There is no record");
+        }
+
+        Set<Integer> indexSet = recordMap.keySet();
+        for (int index : indexSet) {
+            T data = (T) recordMap.get(index);
+            dataList.add(data);
+        }
+
+        return dataList;
+    }
+
+    private <T> Map<Integer, T> getInsertRecord(List<T> records) {
+        Map<Integer, T> recordMap = new HashMap<Integer, T>();
+        for (String tag : insertTagSet) {
+            if (tag.contains(tableClazz.getSimpleName().toLowerCase())) {
+                int index = getIndex(tag);
+                QueryEvent queryEvent = (QueryEvent) insertEventMap.get(tag);
+                T object = (T) queryEvent.getRecord();
+                records.add(object);
+                recordMap.put(index, object);
+            }
+        }
+
+        return recordMap;
+    }
+
+    private <T> void updateRecord(Map<Integer, T> recordMap) {
+        for (String tag : updateTagSet) {
+            if (tag.contains(tableClazz.getSimpleName().toLowerCase())) {
+                int index = getIndex(tag);
+                QueryEvent queryEvent = (QueryEvent) updateEventMap.get(tag);
+                String column = getColumn(tag);
+                Object data = queryEvent.getRecord();
+                Object originData = recordMap.get(index);
+                Field[] fields = data.getClass().getDeclaredFields();
+                for (Field field : fields) {
+                    if (recordMap.containsKey(index) && field.getName().equals(column)) {
+                        T newData = (T) setValueFromOther(originData, data, field.getName());
+                        recordMap.put(index, newData);
+                    }
+                }
+            }
+        }
+    }
 
     /**
      * where条件的构建
@@ -94,9 +174,6 @@ public class DatabaseCache {
      * @return DatabaseCache的单例
      */
     public DatabaseCache where(String column, Object value) {
-        updateTag = tableClazz.getSimpleName().toLowerCase() + "_query_update_";
-        insertTag = tableClazz.getSimpleName().toLowerCase() + "_query_insert_";
-        queryTag = tableClazz.getSimpleName().toLowerCase() + "_query";
         queryValue = value;
         queryColumn = column;
         return this;
@@ -113,32 +190,13 @@ public class DatabaseCache {
     public <T> List<T> find() throws NoTagException, NoRecordException {
         boolean isInsert = false;
         List<T> records = new ArrayList<T>();
-        Map<Integer, T> recordMap = new HashMap<Integer, T>();
+        Map<Integer, T> recordMap = getInsertRecord(records);
+        if (records.size() > 0) {
+            isInsert = true;
+        }
         List<T> dataList = new ArrayList<T>();
 
-        for (String tag : insertTagSet) {
-            int index = getIndex(tag);
-            QueryEvent queryEvent = (QueryEvent) insertEventMap.get(tag);
-            T object = (T) queryEvent.getRecord();
-            records.add(object);
-            isInsert = true;
-            recordMap.put(index, object);
-        }
-
-        for (String tag : updateTagSet) {
-            int index = getIndex(tag);
-            QueryEvent queryEvent = (QueryEvent) updateEventMap.get(tag);
-            String column = getColumn(tag);
-            Object data = queryEvent.getRecord();
-            Object originData = recordMap.get(index);
-            Field[] fields = data.getClass().getDeclaredFields();
-            for (Field field : fields) {
-                if (recordMap.containsKey(index) && field.getName().equals(column)) {
-                    T newData = (T) setValueFromOther(originData, data, field.getName());
-                    recordMap.put(index, newData);
-                }
-            }
-        }
+        updateRecord(recordMap);
 
         if (!isInsert) {
             throw new NoTagException("There is no event match the tag");
@@ -210,31 +268,13 @@ public class DatabaseCache {
     public <T> T find(String column, Class<T> clazz) throws NoTagException, NoRecordException {
         updateTag = tableClazz.getSimpleName().toLowerCase() + "_query_update_" + column;
         boolean isInsert = false;
-        List<Object> records = new ArrayList<Object>();
-        Map<Integer, Object> recordMap = new HashMap<Integer, Object>();
-        for (String tag : insertTagSet) {
-            int index = getIndex(tag);
-            QueryEvent queryEvent = (QueryEvent) insertEventMap.get(tag);
-            T object = (T) queryEvent.getRecord();
-            records.add(object);
+        List<T> records = new ArrayList<T>();
+        Map<Integer, T> recordMap = getInsertRecord(records);
+        if (records.size() > 0) {
             isInsert = true;
-            recordMap.put(index, object);
         }
 
-        for (String tag : updateTagSet) {
-            int index = getIndex(tag);
-            QueryEvent queryEvent = (QueryEvent) updateEventMap.get(tag);
-            Object data = queryEvent.getRecord();
-            Object originData = recordMap.get(index);
-            Field[] fields = data.getClass().getDeclaredFields();
-            for (Field field : fields) {
-                if (recordMap.containsKey(index)) {
-                    Object newData = setValueFromOther(originData, data, field.getName());
-                    recordMap.put(index, newData);
-                }
-            }
-        }
-
+        updateRecord(recordMap);
 
         if (!isInsert) {
             throw new NoTagException("There is no event match the tag");
@@ -365,5 +405,249 @@ public class DatabaseCache {
             LogUtil.e(e.toString());
         }
         return data;
+    }
+
+    public <T> void insertToDb(Class<T> clazz) throws NoTagException, NoRecordException, NoSuchTableException, NoTableException {
+        List<T> dataList = from(clazz).findAll();
+        db.beginTransaction();
+        BaseTable[] array = dataList.toArray(new BaseTable[0]);
+        for (BaseTable data : array) {
+            save(data);
+        }
+        db.setTransactionSuccessful();
+        db.endTransaction();
+    }
+
+    /**
+     * 保存
+     *
+     * @throws NoSuchTableException
+     */
+    public <T> void save(T data) throws NoSuchTableException {
+        String tableName = "";
+        Field[] fields = data.getClass().getDeclaredFields();
+        if (data.getClass().isAnnotationPresent(Table.class)) {
+            Table table = data.getClass().getAnnotation(Table.class);
+            tableName = table.table();
+            if (tableName.length() == 0) {
+                throw new NoSuchTableException("The table + " + getClass().getSimpleName() + " is not exist");
+            }
+        }
+
+        ContentValues values = new ContentValues();
+        for (java.lang.reflect.Field field : fields) {
+            if (field.isAnnotationPresent(Column.class)) {
+                Column meta = field.getAnnotation(Column.class);
+                String column = meta.column();
+                if (column.equals("")) {
+                    column = field.getName();
+                }
+
+                String type = "";
+                if (field.isAnnotationPresent(ColumnType.class)) {
+                    ColumnType fieldType = field.getAnnotation(ColumnType.class);
+                    type = fieldType.ColumnType();
+                } else {
+                    type = field.getType().getName();
+                }
+                field.setAccessible(true);
+                if (!type.equals("")) {
+                    Object value = null;
+                    try {
+                        value = field.get(data);
+                    } catch (IllegalAccessException e) {
+                        LogUtil.e(e.toString());
+                    }
+                    if (type.contains("String")) {
+                        values.put(column, value.toString());
+                    } else if (type.equals("int")) {
+                        values.put(column, (int) value);
+                    } else if (type.equals("double")) {
+                        values.put(column, (double) value);
+                    } else if (type.equals("float")) {
+                        values.put(column, (float) value);
+                    } else if (type.equals("boolean")) {
+                        values.put(column, (boolean) value);
+                    } else if (type.equals("long")) {
+                        values.put(column, (long) value);
+                    } else if (type.equals("short")) {
+                        values.put(column, (short) value);
+                    }
+                }
+            }
+        }
+        db.insert(tableName, null, values);
+    }
+
+    public <T> List<T> readFromDb(Class<T> clazz) throws NoTableException {
+        Field[] fields = clazz.getDeclaredFields();
+        List<String> fieldNames = new ArrayList<String>();
+        Map<String, String> types = new HashMap<String, String>();
+        for (Field field : fields) {
+            fieldNames.add(field.getName());
+            if (field.isAnnotationPresent(ColumnType.class)) {
+                ColumnType fieldType = field.getAnnotation(ColumnType.class);
+                types.put(field.getName().toLowerCase(), fieldType.ColumnType());
+            }
+        }
+
+        List<Method> setMethods = getSetMethods(clazz);
+        Cursor cursor = db.query(clazz.getSimpleName(), null, null, null, null, null, null);//查询并获得游标
+        List<T> list = getList(clazz, cursor, setMethods, fieldNames, fields, types);
+        for (T data : list) {
+            InsertEvent insertEvent = new InsertEvent();
+            insertEvent.to(clazz).insert(data);
+        }
+        cursor.close();
+        return list;
+    }
+
+    /**
+     * 获取数据
+     *
+     * @param clazz      表对象的class对象
+     * @param cursor     光标
+     * @param methods    方法List
+     * @param fieldNames 字段名
+     * @param fields     字段数组
+     * @param types      字段类型数组
+     * @param <T>        表对象的类型
+     * @return 表对象的List
+     */
+    private <T> List<T> getList(Class<T> clazz, Cursor cursor, List<Method> methods, List<String> fieldNames, Field[] fields, Map<String, String> types) {
+        List<T> list = new ArrayList<T>();
+        Constructor<?> constructor = findBestSuitConstructor(clazz);
+        Set<String> keySet = types.keySet();
+        while (cursor.moveToNext()) {
+            try {
+                T data = (T) constructor
+                        .newInstance();
+                for (Method method : methods) {
+                    String name = method.getName();
+                    String valueName = name.substring(3).substring(0, 1).toLowerCase() + name.substring(4);
+                    String type = null;
+                    String fieldType = null;
+                    int index = 0;
+                    if (fieldNames.contains(valueName)) {
+                        index = fieldNames.indexOf(valueName);
+                        type = fields[index].getGenericType().toString();
+                        if (keySet.contains(valueName)) {
+                            fieldType = types.get(valueName);
+                        }
+                    }
+                    Object value = getColumnValue(cursor, valueName, type, fieldType);
+                    fields[index].setAccessible(true);
+                    fields[index].set(data, value);
+                }
+
+                list.add(data);
+            } catch (InstantiationException e) {
+                LogUtil.e(e.toString());
+            } catch (IllegalAccessException e) {
+                LogUtil.e(e.toString());
+            } catch (InvocationTargetException e) {
+                LogUtil.e(e.toString());
+            } catch (JSONException e) {
+                LogUtil.e(e.toString());
+            }
+        }
+        return list;
+    }
+
+    /**
+     * 获取列值
+     *
+     * @param cursor    光标
+     * @param column    列名
+     * @param fieldType 字段类型
+     * @param dbType    数据库字段类型
+     * @return 列值
+     * @throws JSONException
+     */
+    public Object getColumnValue(Cursor cursor, String column, String fieldType, String dbType) throws JSONException {
+        Object data = null;
+
+        if (dbType == null) {
+            dbType = fieldType;
+        }
+        if (dbType.equals("String") || dbType.contains("String")) {
+            data = cursor.getString(cursor.getColumnIndex(column));
+            if (fieldType != null && fieldType.contains("JSONObject")) {
+                data = new JSONObject((String) data);
+            } else if (fieldType != null && fieldType.contains("JSONArray")) {
+                data = new JSONArray((String) data);
+            }
+        } else if (dbType.equals("Integer") || dbType.equals("int")) {
+            data = cursor.getInt(cursor.getColumnIndex(column));
+        } else if (dbType.equals("Long") || dbType.equals("long")) {
+            data = cursor.getLong(cursor.getColumnIndex(column));
+        } else if (dbType.equals("Double") || dbType.equals("double")) {
+            data = cursor.getDouble(cursor.getColumnIndex(column));
+        } else if (dbType.equals("Float") || dbType.equals("float")) {
+            data = cursor.getFloat(cursor.getColumnIndex(column));
+        } else if (dbType.equals("Short") || dbType.equals("short")) {
+            data = cursor.getShort(cursor.getColumnIndex(column));
+        }
+        return data;
+    }
+
+    /**
+     * 寻找最适合的构造器
+     *
+     * @param modelClass 表对象的class对象
+     * @return 构造器
+     */
+    private Constructor<?> findBestSuitConstructor(Class<?> modelClass) {
+        Constructor<?> finalConstructor = null;
+        Constructor<?>[] constructors = modelClass.getConstructors();
+        for (Constructor<?> constructor : constructors) {
+            if (finalConstructor == null) {
+                finalConstructor = constructor;
+            } else {
+                int finalParamLength = finalConstructor.getParameterTypes().length;
+                int newParamLength = constructor.getParameterTypes().length;
+                if (newParamLength < finalParamLength) {
+                    finalConstructor = constructor;
+                }
+            }
+        }
+        finalConstructor.setAccessible(true);
+        return finalConstructor;
+    }
+
+    /**
+     * 获取Set方法
+     *
+     * @param clazz 表对象的class对象
+     * @return 方法数组
+     */
+    private List<Method> getSetMethods(Class clazz) {
+        Method[] allMethods = clazz.getMethods();
+        List<Method> setMethods = new ArrayList<Method>();
+        for (Method method : allMethods) {
+            String name = method.getName();
+
+            if (name.contains("set") && !name.equals("offset")) {
+                setMethods.add(method);
+                continue;
+            }
+        }
+
+        return setMethods;
+    }
+
+    public Set<Class<?>> getTableSet() {
+        Set<Class<?>> tableClazz = new HashSet<Class<?>>();
+        Set<String> tableSet = helper.getTableSet();
+        for (String table : tableSet) {
+            try {
+                Class clazz = Class.forName(table);
+                tableClazz.add(clazz);
+            } catch (ClassNotFoundException e) {
+                LogUtil.e(e.toString());
+            }
+        }
+
+        return tableClazz;
     }
 }
