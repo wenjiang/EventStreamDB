@@ -2,6 +2,8 @@ package com.zwb.args.dbpratice.event;
 
 import com.zwb.args.dbpratice.exception.NoTableException;
 
+import java.util.List;
+
 /**
  * 插入事件
  * Created by pc on 2015/4/8.
@@ -18,10 +20,9 @@ public class InsertEvent extends BaseDataChangeEvent {
      *
      * @param record 数据
      * @param <T>    泛型参数
-     * @return InsertEvent的实例
      * @throws NoTableException
      */
-    public <T> InsertEvent insert(T record) throws NoTableException {
+    public <T> void insert(T record) throws NoTableException {
         if (tableClazz == null) {
             throw new NoTableException("There is no table");
         }
@@ -32,7 +33,21 @@ public class InsertEvent extends BaseDataChangeEvent {
         stream.insertData(tableClazz, index, record);
         stream.registerInsertEvent(queryEvent);
         index++;
-        return this;
+    }
+
+    public <T> void insertAll(List<T> dataList) throws NoTableException {
+        if (tableClazz == null) {
+            throw new NoTableException("There is no table");
+        }
+
+        for (T record : dataList) {
+            QueryEvent queryEvent = new QueryEvent();
+            queryEvent.insertRecord(record);
+            queryEvent.setTag(tableClazz.getSimpleName().toLowerCase() + "_query_insert_" + index);
+            stream.insertData(tableClazz, index, record);
+            stream.registerInsertEvent(queryEvent);
+            index++;
+        }
     }
 
     @Override

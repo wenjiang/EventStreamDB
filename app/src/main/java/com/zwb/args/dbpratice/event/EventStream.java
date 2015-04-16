@@ -13,12 +13,10 @@ public class EventStream {
     private Map<String, BaseEvent> insertEventMap;
     private Map<String, BaseEvent> updateEventMap;
     private static EventStream stream;
-    private Map<Integer, Object> recordMap;
     private Map<Class<?>, Map<Integer, Object>> tableMap;
 
     private EventStream() {
         eventMap = new HashMap<String, BaseEvent>();
-        recordMap = new HashMap<Integer, Object>();
         tableMap = new HashMap<Class<?>, Map<Integer, Object>>();
         insertEventMap = new HashMap<String, BaseEvent>();
         updateEventMap = new HashMap<String, BaseEvent>();
@@ -100,8 +98,8 @@ public class EventStream {
      *
      * @return 数据的Map
      */
-    public Map<Integer, Object> getRecordMap() {
-        return recordMap;
+    public Map<Integer, Object> getRecordMap(Class<?> tableClazz) {
+        return tableMap.get(tableClazz);
     }
 
     /**
@@ -113,7 +111,16 @@ public class EventStream {
      * @param <T>        泛型参数
      */
     public <T> void insertData(Class<?> tableClazz, int index, T record) {
+        Map<Integer, Object> recordMap = tableMap.get(tableClazz);
+        if (recordMap == null) {
+            recordMap = new HashMap<Integer, Object>();
+        }
+
         recordMap.put(index, record);
         tableMap.put(tableClazz, recordMap);
+    }
+
+    public void setInsertRecords(Map<String, BaseEvent> insertRecords) {
+        this.insertEventMap = insertRecords;
     }
 }

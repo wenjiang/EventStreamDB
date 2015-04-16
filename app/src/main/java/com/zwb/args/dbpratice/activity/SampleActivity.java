@@ -9,15 +9,15 @@ import android.widget.TextView;
 
 import com.zwb.args.dbpratice.R;
 import com.zwb.args.dbpratice.cache.DatabaseCache;
+import com.zwb.args.dbpratice.event.DeleteEvent;
 import com.zwb.args.dbpratice.event.InsertEvent;
-import com.zwb.args.dbpratice.event.UpdateEvent;
 import com.zwb.args.dbpratice.exception.NoRecordException;
 import com.zwb.args.dbpratice.exception.NoTableException;
 import com.zwb.args.dbpratice.exception.NoTagException;
 import com.zwb.args.dbpratice.model.Status;
-import com.zwb.args.dbpratice.model.User;
 import com.zwb.args.dbpratice.util.LogUtil;
 
+import java.util.ArrayList;
 import java.util.List;
 
 
@@ -29,36 +29,42 @@ public class SampleActivity extends ActionBarActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        for (int i = 0; i < 100; i++) {
+        List<Status> statuses = new ArrayList<Status>();
+        for (int i = 0; i < 10; i++) {
             Status status = new Status();
-            status.setName("转发");
+            status.setName("吸金好");
             status.setStatusId("01");
-            InsertEvent insertStatusEvent = new InsertEvent();
-            User user = new User();
-            user.setName("并送");
-            user.setUserId("02");
-            InsertEvent insertUserEvent = new InsertEvent();
-            try {
-                insertUserEvent.to(User.class).insert(user);
-                insertStatusEvent.to(Status.class).insert(status);
-            } catch (NoTableException e) {
-                LogUtil.e(e.toString());
-            }
+            statuses.add(status);
         }
 
-        UpdateEvent updateEvent = new UpdateEvent();
-        updateEvent.to(Status.class).where("id", "01").update("name", "你好");
+        Status status = new Status();
+        status.setName("你好");
+        status.setStatusId("02");
+
+        InsertEvent insertEvent1 = new InsertEvent();
+        InsertEvent insertEvent = new InsertEvent();
+        try {
+            insertEvent.to(Status.class).insertAll(statuses);
+            insertEvent1.to(Status.class).insert(status);
+        } catch (NoTableException e) {
+            LogUtil.e(e.toString());
+        }
+
+        DeleteEvent deleteEvent = new DeleteEvent();
+        try {
+            deleteEvent.to(Status.class).deleteAll();
+        } catch (NoRecordException e) {
+            LogUtil.e(e.toString());
+        }
+
         DatabaseCache cache = DatabaseCache.getInstance(this);
         tvName = (TextView) findViewById(R.id.tv_name);
         List<Status> statusList = null;
-        List<User> userList = null;
         try {
             long start = System.currentTimeMillis();
-            statusList = cache.from(Status.class).where("statusId", "01").find();
-            userList = cache.from(User.class).findAll();
+            statusList = cache.from(Status.class).findAll();
             long end = System.currentTimeMillis();
             LogUtil.e("时间:" + (end - start) + ", 提取的长度:" + statusList.size());
-            LogUtil.e("提取的user长度:" + userList.size() + ", 用户的名字:" + userList.get(0).getName());
         } catch (NoTagException e) {
             LogUtil.e(e.toString());
         } catch (NoRecordException e) {

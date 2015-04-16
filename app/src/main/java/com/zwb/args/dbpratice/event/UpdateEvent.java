@@ -88,8 +88,8 @@ public class UpdateEvent extends BaseDataChangeEvent {
      * @param <T>    泛型参数
      * @return UpdateEvent的实例
      */
-    public <T> UpdateEvent where(String column, Object value) {
-        dataMap = stream.getRecordMap();
+    public <T> UpdateEvent where(String column, Object value) throws IllegalAccessException {
+        dataMap = stream.getRecordMap(tableClazz);
         Set<Integer> indexSet = dataMap.keySet();
         for (int indexValue : indexSet) {
             T oldData = (T) dataMap.get(indexValue);
@@ -109,60 +109,16 @@ public class UpdateEvent extends BaseDataChangeEvent {
      * @param <T>     泛型参数
      * @return 是否符合
      */
-    private <T> boolean isValueMatch(String column, Object value, T oldData) {
+    private <T> boolean isValueMatch(String column, Object value, T oldData) throws IllegalAccessException {
         Field[] fields = oldData.getClass().getDeclaredFields();
         boolean isMatch = false;
         for (Field field : fields) {
             if (field.getName().contains(column)) {
-                isMatch = isMatch(field, value, oldData);
+                field.setAccessible(true);
+                Object columnData = field.get(oldData);
+                isMatch = (value.toString()).equals(columnData.toString());
                 break;
             }
-        }
-        return isMatch;
-    }
-
-    /**
-     * 检查字段是否符合该值
-     *
-     * @param field 字段
-     * @param value 值
-     * @param data  原先的数据
-     * @param <T>   泛型参数
-     * @return 是否符合
-     */
-    private <T> boolean isMatch(Field field, Object value, T data) {
-        boolean isMatch = false;
-        try {
-            String type = field.getType().getSimpleName();
-            field.setAccessible(true);
-            if (type.equals("String") || type.contains("String")) {
-                String columnData = (String) field.get(data);
-                if (columnData.equals((String) value)) {
-                    isMatch = true;
-                }
-            } else if (type.equals("Integer") || type.equals("int")) {
-                if (field.getInt(data) == (int) value) {
-                    isMatch = true;
-                }
-            } else if (type.equals("Long") || type.equals("long")) {
-                if (field.getLong(data) == (long) value) {
-                    isMatch = true;
-                }
-            } else if (type.equals("Double") || type.equals("double")) {
-                if (field.getDouble(data) == (double) value) {
-                    isMatch = true;
-                }
-            } else if (type.equals("Float") || type.equals("float")) {
-                if (field.getFloat(data) == (float) value) {
-                    isMatch = true;
-                }
-            } else if (type.equals("Short") || type.equals("short")) {
-                if (field.getShort(data) == (short) value) {
-                    isMatch = true;
-                }
-            }
-        } catch (IllegalAccessException e) {
-            LogUtil.e(e.toString());
         }
         return isMatch;
     }

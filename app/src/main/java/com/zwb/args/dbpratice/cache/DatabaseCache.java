@@ -105,23 +105,12 @@ public class DatabaseCache {
      * @throws NoRecordException
      */
     public <T> List<T> findAll() throws NoTableException, NoTagException, NoRecordException {
-        boolean isInsert = false;
         List<T> records = new ArrayList<T>();
         Map<Integer, T> recordMap = getInsertRecord(records);
-        if (records.size() > 0) {
-            isInsert = true;
-        }
+
         List<T> dataList = new ArrayList<T>();
 
         updateRecord(recordMap);
-
-        if (!isInsert) {
-            throw new NoTagException("There is no event match the tag");
-        }
-
-        if (recordMap.size() <= 0) {
-            throw new NoRecordException("There is no record");
-        }
 
         Set<Integer> indexSet = recordMap.keySet();
         for (int index : indexSet) {
@@ -188,19 +177,12 @@ public class DatabaseCache {
      * @throws NoRecordException
      */
     public <T> List<T> find() throws NoTagException, NoRecordException {
-        boolean isInsert = false;
-        List<T> records = new ArrayList<T>();
+         List<T> records = new ArrayList<T>();
         Map<Integer, T> recordMap = getInsertRecord(records);
-        if (records.size() > 0) {
-            isInsert = true;
-        }
+
         List<T> dataList = new ArrayList<T>();
 
         updateRecord(recordMap);
-
-        if (!isInsert) {
-            throw new NoTagException("There is no event match the tag");
-        }
 
         if (recordMap.size() <= 0) {
             throw new NoRecordException("There is no record");
@@ -267,22 +249,10 @@ public class DatabaseCache {
      */
     public <T> T find(String column, Class<T> clazz) throws NoTagException, NoRecordException {
         updateTag = tableClazz.getSimpleName().toLowerCase() + "_query_update_" + column;
-        boolean isInsert = false;
-        List<T> records = new ArrayList<T>();
+         List<T> records = new ArrayList<T>();
         Map<Integer, T> recordMap = getInsertRecord(records);
-        if (records.size() > 0) {
-            isInsert = true;
-        }
 
         updateRecord(recordMap);
-
-        if (!isInsert) {
-            throw new NoTagException("There is no event match the tag");
-        }
-
-        if (records.size() <= 0) {
-            throw new NoRecordException("There is no record");
-        }
 
         return (T) getColumnValue(records.get(0), column);
     }

@@ -105,3 +105,26 @@ Android上的基于事件流的数据库
             
             这样就会将和Status有关的数据插入到数据库中。
 
+（6）删除数据
+
+            DeleteEvent deleteEvent = new DeleteEvent();
+            deleteEvent.to(Status.class).where("id", "01").delete();
+            
+            这样就是删除id为01的数据。
+            
+            如果是删除某个集合的全部数据，则是:
+            List<Status> statuses = new ArrayList<Status>();
+            for(int i = 0; i < 10; i++){
+                  Status status = new Status();
+                  status.setName("你好");
+                  status.setId("01");
+                  statuses.add(status);
+            }
+            deleteEvent.to(Status.class).deleteAll(statuses);
+            
+            如果是删除表的全部数据：
+            deleteEvent.to(Status.class).deleteAll();
+            
+            
+            
+

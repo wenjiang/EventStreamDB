@@ -1,6 +1,7 @@
 package com.zwb.args.dbpratice.model;
 
 import com.zwb.args.dbpratice.annotation.Column;
+import com.zwb.args.dbpratice.annotation.Key;
 import com.zwb.args.dbpratice.annotation.Table;
 
 /**
@@ -11,6 +12,7 @@ public class User extends BaseTable {
     @Column
     private String name;
     @Column
+    @Key
     private String userId;
 
     public String getName() {
