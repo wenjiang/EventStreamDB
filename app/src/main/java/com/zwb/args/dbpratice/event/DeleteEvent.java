@@ -29,8 +29,14 @@ public class DeleteEvent extends BaseDataChangeEvent {
         return this;
     }
 
-
-    public <T> void delete() throws NoRecordException, NoSuchFieldException, IllegalAccessException {
+    /**
+     * 删除数据
+     *
+     * @throws NoRecordException
+     * @throws NoSuchFieldException
+     * @throws IllegalAccessException
+     */
+    public void delete() throws NoRecordException, NoSuchFieldException, IllegalAccessException {
         dataMap = stream.getRecordMap(tableClazz);
         if (dataMap == null) {
             throw new NoRecordException("There is no record in " + tableClazz.getSimpleName());
@@ -39,6 +45,15 @@ public class DeleteEvent extends BaseDataChangeEvent {
         deleteData();
     }
 
+    /**
+     * 删除List中的数据
+     *
+     * @param dataList 要删除的List
+     * @param <T>      类型
+     * @throws NoRecordException
+     * @throws NoSuchFieldException
+     * @throws IllegalAccessException
+     */
     public <T> void deleteAll(List<T> dataList) throws NoRecordException, NoSuchFieldException, IllegalAccessException {
         dataMap = stream.getRecordMap(tableClazz);
         if (dataMap == null) {
@@ -50,6 +65,11 @@ public class DeleteEvent extends BaseDataChangeEvent {
         }
     }
 
+    /**
+     * 删除全部数据
+     *
+     * @throws NoRecordException
+     */
     public void deleteAll() throws NoRecordException {
         dataMap = stream.getRecordMap(tableClazz);
         if (dataMap == null) {
@@ -67,6 +87,14 @@ public class DeleteEvent extends BaseDataChangeEvent {
         }
     }
 
+    /**
+     * 删除数据
+     *
+     * @param data 表对象
+     * @param <T>  类型
+     * @throws NoSuchFieldException
+     * @throws IllegalAccessException
+     */
     private <T> void deleteData(T data) throws NoSuchFieldException, IllegalAccessException {
         Map<String, BaseEvent> insertEventMap = stream.getInsertEventMap();
         Set<String> tagSet = insertEventMap.keySet();
@@ -90,6 +118,9 @@ public class DeleteEvent extends BaseDataChangeEvent {
         stream.setInsertRecords(insertEventMap);
     }
 
+    /**
+     * 删除数据
+     */
     private <T> void deleteData() throws NoSuchFieldException, IllegalAccessException {
         Map<String, BaseEvent> insertEventMap = stream.getInsertEventMap();
         Set<String> tagSet = insertEventMap.keySet();
@@ -112,6 +143,15 @@ public class DeleteEvent extends BaseDataChangeEvent {
         stream.setInsertRecords(insertEventMap);
     }
 
+    /**
+     * 获取表对象的key，也就是id
+     *
+     * @param data 表对象
+     * @param <T>  类型
+     * @return id
+     * @throws NoSuchFieldException
+     * @throws IllegalAccessException
+     */
     private <T> String getKey(T data) throws NoSuchFieldException, IllegalAccessException {
         String key = "";
         Field field = data.getClass().getDeclaredField(tableClazz.getSimpleName().toLowerCase() + "Id");
@@ -122,6 +162,15 @@ public class DeleteEvent extends BaseDataChangeEvent {
         return key;
     }
 
+    /**
+     * 获取字段的值
+     *
+     * @param data 表对象
+     * @param <T>  类型
+     * @return 字段的值
+     * @throws NoSuchFieldException
+     * @throws IllegalAccessException
+     */
     private <T> Object getValue(T data) throws NoSuchFieldException, IllegalAccessException {
         Field field = data.getClass().getDeclaredField(column);
         field.setAccessible(true);
@@ -141,6 +190,13 @@ public class DeleteEvent extends BaseDataChangeEvent {
         return index;
     }
 
+    /**
+     * 条件语句的构建
+     *
+     * @param column 列名
+     * @param value  值
+     * @return DeleteEvent的实例
+     */
     public DeleteEvent where(String column, String value) {
         this.column = column;
         this.value = value;

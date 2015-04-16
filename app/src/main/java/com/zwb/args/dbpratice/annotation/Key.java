@@ -7,6 +7,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
+ * 标记表的主键id
  * Created by pc on 2015/4/15.
  */
 @Target(ElementType.FIELD)

@@ -35,6 +35,13 @@ public class InsertEvent extends BaseDataChangeEvent {
         index++;
     }
 
+    /**
+     * 插入List的数据
+     *
+     * @param dataList 数据的List
+     * @param <T>      类型
+     * @throws NoTableException
+     */
     public <T> void insertAll(List<T> dataList) throws NoTableException {
         if (tableClazz == null) {
             throw new NoTableException("There is no table");

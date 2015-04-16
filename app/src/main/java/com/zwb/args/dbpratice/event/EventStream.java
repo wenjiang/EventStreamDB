@@ -120,6 +120,11 @@ public class EventStream {
         tableMap.put(tableClazz, recordMap);
     }
 
+    /**
+     * 设置插入记录
+     *
+     * @param insertRecords 插入的记录
+     */
     public void setInsertRecords(Map<String, BaseEvent> insertRecords) {
         this.insertEventMap = insertRecords;
     }
