@@ -9,9 +9,9 @@ import android.widget.TextView;
 
 import com.zwb.args.dbpratice.R;
 import com.zwb.args.dbpratice.cache.DatabaseCache;
-import com.zwb.args.dbpratice.event.DeleteEvent;
 import com.zwb.args.dbpratice.event.InsertEvent;
 import com.zwb.args.dbpratice.exception.NoRecordException;
+import com.zwb.args.dbpratice.exception.NoSuchTableException;
 import com.zwb.args.dbpratice.exception.NoTableException;
 import com.zwb.args.dbpratice.exception.NoTagException;
 import com.zwb.args.dbpratice.model.Status;
@@ -50,14 +50,19 @@ public class SampleActivity extends ActionBarActivity {
             LogUtil.e(e.toString());
         }
 
-        DeleteEvent deleteEvent = new DeleteEvent();
+        DatabaseCache cache = DatabaseCache.getInstance(this);
         try {
-            deleteEvent.to(Status.class).deleteAll();
+            cache.insertToDb(Status.class);
+            cache.insertToDb(Status.class);
+        } catch (NoTagException e) {
+            LogUtil.e(e.toString());
         } catch (NoRecordException e) {
             LogUtil.e(e.toString());
+        } catch (NoSuchTableException e) {
+            LogUtil.e(e.toString());
+        } catch (NoTableException e) {
+            LogUtil.e(e.toString());
         }
-
-        DatabaseCache cache = DatabaseCache.getInstance(this);
         tvName = (TextView) findViewById(R.id.tv_name);
         List<Status> statusList = null;
         try {
@@ -65,6 +70,9 @@ public class SampleActivity extends ActionBarActivity {
             statusList = cache.from(Status.class).findAll();
             long end = System.currentTimeMillis();
             LogUtil.e("时间:" + (end - start) + ", 提取的长度:" + statusList.size());
+            for (Status s : statusList) {
+                LogUtil.e("id:" + s.getStatusId() + ", name:" + s.getName());
+            }
         } catch (NoTagException e) {
             LogUtil.e(e.toString());
         } catch (NoRecordException e) {

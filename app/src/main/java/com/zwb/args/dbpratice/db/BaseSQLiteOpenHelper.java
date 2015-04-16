@@ -255,6 +255,11 @@ public class BaseSQLiteOpenHelper extends SQLiteOpenHelper {
         }
     }
 
+    /**
+     * 获取Table的Set
+     *
+     * @return Table的Set
+     */
     public Set<String> getTableSet() {
         return tableSet;
     }

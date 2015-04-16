@@ -121,6 +121,13 @@ public class DatabaseCache {
         return dataList;
     }
 
+    /**
+     * 获取插入的记录
+     *
+     * @param records 记录的List
+     * @param <T>     类型
+     * @return 插入的记录的MAP
+     */
     private <T> Map<Integer, T> getInsertRecord(List<T> records) {
         Map<Integer, T> recordMap = new HashMap<Integer, T>();
         for (String tag : insertTagSet) {
@@ -136,6 +143,12 @@ public class DatabaseCache {
         return recordMap;
     }
 
+    /**
+     * 更新记录
+     *
+     * @param recordMap 记录的Map
+     * @param <T>       类型
+     */
     private <T> void updateRecord(Map<Integer, T> recordMap) {
         for (String tag : updateTagSet) {
             if (tag.contains(tableClazz.getSimpleName().toLowerCase())) {
@@ -177,7 +190,7 @@ public class DatabaseCache {
      * @throws NoRecordException
      */
     public <T> List<T> find() throws NoTagException, NoRecordException {
-         List<T> records = new ArrayList<T>();
+        List<T> records = new ArrayList<T>();
         Map<Integer, T> recordMap = getInsertRecord(records);
 
         List<T> dataList = new ArrayList<T>();
@@ -249,7 +262,7 @@ public class DatabaseCache {
      */
     public <T> T find(String column, Class<T> clazz) throws NoTagException, NoRecordException {
         updateTag = tableClazz.getSimpleName().toLowerCase() + "_query_update_" + column;
-         List<T> records = new ArrayList<T>();
+        List<T> records = new ArrayList<T>();
         Map<Integer, T> recordMap = getInsertRecord(records);
 
         updateRecord(recordMap);
@@ -377,9 +390,23 @@ public class DatabaseCache {
         return data;
     }
 
+    /**
+     * 插入数据到数据库
+     *
+     * @param clazz 表对象的class
+     * @param <T>   类型
+     * @throws NoTagException
+     * @throws NoRecordException
+     * @throws NoSuchTableException
+     * @throws NoTableException
+     */
     public <T> void insertToDb(Class<T> clazz) throws NoTagException, NoRecordException, NoSuchTableException, NoTableException {
         List<T> dataList = from(clazz).findAll();
         db.beginTransaction();
+        String deleteSql = "delete from " + tableClazz.getSimpleName().toLowerCase();
+        String deleteIndex = "update sqlite_sequence set seq = 0 where name='" + tableClazz.getSimpleName().toLowerCase() + "'";
+        db.execSQL(deleteSql);
+        db.execSQL(deleteIndex);
         BaseTable[] array = dataList.toArray(new BaseTable[0]);
         for (BaseTable data : array) {
             save(data);
@@ -389,8 +416,10 @@ public class DatabaseCache {
     }
 
     /**
-     * 保存
+     * 保存数据
      *
+     * @param data 要保存的数据
+     * @param <T>  类型
      * @throws NoSuchTableException
      */
     public <T> void save(T data) throws NoSuchTableException {
@@ -449,6 +478,14 @@ public class DatabaseCache {
         db.insert(tableName, null, values);
     }
 
+    /**
+     * 从数据库读取数据
+     *
+     * @param clazz 表对象的class对象
+     * @param <T>   类型
+     * @return 数据的List
+     * @throws NoTableException
+     */
     public <T> List<T> readFromDb(Class<T> clazz) throws NoTableException {
         Field[] fields = clazz.getDeclaredFields();
         List<String> fieldNames = new ArrayList<String>();
@@ -606,6 +643,11 @@ public class DatabaseCache {
         return setMethods;
     }
 
+    /**
+     * 获取表的Set
+     *
+     * @return 表的Set
+     */
     public Set<Class<?>> getTableSet() {
         Set<Class<?>> tableClazz = new HashSet<Class<?>>();
         Set<String> tableSet = helper.getTableSet();
