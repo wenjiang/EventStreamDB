@@ -13,6 +13,7 @@ import com.zwb.args.dbpratice.event.BaseEvent;
 import com.zwb.args.dbpratice.event.EventStream;
 import com.zwb.args.dbpratice.event.InsertEvent;
 import com.zwb.args.dbpratice.event.QueryEvent;
+import com.zwb.args.dbpratice.exception.BaseSQLiteException;
 import com.zwb.args.dbpratice.exception.NoRecordException;
 import com.zwb.args.dbpratice.exception.NoSuchTableException;
 import com.zwb.args.dbpratice.exception.NoTableException;
@@ -23,7 +24,11 @@ import com.zwb.args.dbpratice.util.LogUtil;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.xmlpull.v1.XmlPullParser;
+import org.xmlpull.v1.XmlPullParserFactory;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -37,7 +42,7 @@ import java.util.Set;
 
 /**
  * 数据缓存，用于提取事件中的数据
- * Created by pc on 2015/4/8.
+ * Created by wenbiao_zheng on 2015/4/8.
  */
 public class DatabaseCache {
     private static DatabaseCache cache;
@@ -54,6 +59,9 @@ public class DatabaseCache {
     private Context context;
     private SQLiteDatabase db;
     private BaseSQLiteOpenHelper helper;
+    private String dbName;
+    private int version;
+    public static Set<String> tableSet;
 
     private DatabaseCache(Context context) {
         this.context = context;
@@ -61,8 +69,13 @@ public class DatabaseCache {
         insertTagSet = insertEventMap.keySet();
         updateEventMap = EventStream.getInstance().getUpdateEventMap();
         updateTagSet = updateEventMap.keySet();
+        try {
+            readXml(context);
+        } catch (BaseSQLiteException e) {
+            LogUtil.e(e.toString());
+        }
         if (helper == null) {
-            helper = BaseSQLiteOpenHelper.getInstance(context);
+            helper = new BaseSQLiteOpenHelper(context, dbName, version);
             db = helper.getWritableDatabase();
         }
     }
@@ -248,6 +261,59 @@ public class DatabaseCache {
             }
         }
         return dataList;
+    }
+
+    /**
+     * 读取数据库的配置文件
+     *
+     * @param context 上下文
+     * @throws com.zwb.args.dbpratice.exception.BaseSQLiteException
+     */
+    private void readXml(Context context) throws BaseSQLiteException {
+        tableSet = new HashSet<String>();
+        InputStream in = null;
+        try {
+            in = context.getResources()
+                    .getAssets().open("database.xml");
+        } catch (IOException e) {
+            throw new BaseSQLiteException("database.xml is not exist");
+        }
+        XmlPullParserFactory factory;
+        try {
+            factory = XmlPullParserFactory.newInstance();
+            factory.setNamespaceAware(true);
+            XmlPullParser xpp = factory.newPullParser();
+            xpp.setInput(in, "UTF-8");
+            int evtType = xpp.getEventType();
+            // 一直循环，直到文档结束
+            while (evtType != XmlPullParser.END_DOCUMENT) {
+                switch (evtType) {
+                    case XmlPullParser.START_TAG:
+                        String tag = xpp.getName();
+                        if (tag.equals("dbname")) {
+                            dbName = xpp.getAttributeValue(0);
+                        } else if (tag.equals("version")) {
+                            version = Integer.valueOf(xpp.getAttributeValue(0));
+                        } else if (tag.equals("mapping")) {
+                            tableSet.add(xpp.getAttributeValue(0));
+                        }
+                        break;
+                    case XmlPullParser.END_TAG:
+                        break;
+                    default:
+                        break;
+                }
+                //获得下一个节点的信息
+                evtType = xpp.next();
+            }
+        } catch (Exception e) {
+            LogUtil.e(e.toString());
+        } finally {
+            List<String> tableList = new ArrayList<String>();
+            for (String table : tableSet) {
+                tableList.add(table);
+            }
+        }
     }
 
     /**

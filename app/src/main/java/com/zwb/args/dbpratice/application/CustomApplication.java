@@ -3,6 +3,7 @@ package com.zwb.args.dbpratice.application;
 import android.app.Application;
 
 import com.zwb.args.dbpratice.cache.DatabaseCache;
+import com.zwb.args.dbpratice.db.SharedPreferencesManager;
 import com.zwb.args.dbpratice.exception.NoTableException;
 import com.zwb.args.dbpratice.util.LogUtil;
 
@@ -17,6 +18,7 @@ public class CustomApplication extends Application {
         super.onCreate();
 
         DatabaseCache cache = DatabaseCache.getInstance(this);
+        SharedPreferencesManager.init(this);
         Set<Class<?>> tableSet = cache.getTableSet();
         for (Class clazz : tableSet) {
             try {

@@ -28,8 +28,6 @@ public final class SharedPreferencesManager {
     private final SharedPreferences sharedPreferences;
     private final SharedPreferences.Editor editor;
 
-    private Context context;
-
     private SharedPreferencesManager(Context context) {
         sharedPreferences = context.getSharedPreferences(PRFE_NAME, Context.MODE_PRIVATE);
         editor = sharedPreferences.edit();
