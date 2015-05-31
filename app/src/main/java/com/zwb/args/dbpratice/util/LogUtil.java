@@ -4,7 +4,6 @@ import android.util.Log;
 
 /**
  * Log的工具类
- * <p/>
  * Created by wenbiao_zheng on 2014/10/10.
  *
  * @author wenbiao_zheng

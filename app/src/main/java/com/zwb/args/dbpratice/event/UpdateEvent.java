@@ -17,7 +17,7 @@ public class UpdateEvent extends BaseDataChangeEvent {
     private Map<Integer, Object> dataMap;
 
     public UpdateEvent() {
-        dataMap = new HashMap<Integer, Object>();
+        dataMap = new HashMap<>();
     }
 
     /**

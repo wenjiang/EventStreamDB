@@ -9,17 +9,15 @@ import java.util.Map;
  * Created by pc on 2015/4/8.
  */
 public class EventStream {
-    private Map<String, BaseEvent> eventMap;
     private Map<String, BaseEvent> insertEventMap;
     private Map<String, BaseEvent> updateEventMap;
     private static EventStream stream;
     private Map<Class<?>, Map<Integer, Object>> tableMap;
 
     private EventStream() {
-        eventMap = new HashMap<String, BaseEvent>();
-        tableMap = new HashMap<Class<?>, Map<Integer, Object>>();
-        insertEventMap = new HashMap<String, BaseEvent>();
-        updateEventMap = new HashMap<String, BaseEvent>();
+        tableMap = new HashMap<>();
+        insertEventMap = new HashMap<>();
+        updateEventMap = new HashMap<>();
     }
 
     /**
