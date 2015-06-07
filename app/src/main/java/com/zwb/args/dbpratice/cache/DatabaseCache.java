@@ -118,16 +118,16 @@ public class DatabaseCache {
      * @throws NoRecordException
      */
     public <T> List<T> findAll() throws NoTableException, NoTagException, NoRecordException {
-        List<T> records = new ArrayList<T>();
+        List<T> records = new ArrayList<>();
         Map<Integer, T> recordMap = getInsertRecord(records);
 
-        List<T> dataList = new ArrayList<T>();
+        List<T> dataList = new ArrayList<>();
 
         updateRecord(recordMap);
 
         Set<Integer> indexSet = recordMap.keySet();
         for (int index : indexSet) {
-            T data = (T) recordMap.get(index);
+            T data = recordMap.get(index);
             dataList.add(data);
         }
 
@@ -142,7 +142,7 @@ public class DatabaseCache {
      * @return 插入的记录的MAP
      */
     private <T> Map<Integer, T> getInsertRecord(List<T> records) {
-        Map<Integer, T> recordMap = new HashMap<Integer, T>();
+        Map<Integer, T> recordMap = new HashMap<>();
         for (String tag : insertTagSet) {
             if (tag.contains(tableClazz.getSimpleName().toLowerCase())) {
                 int index = getIndex(tag);
@@ -203,10 +203,10 @@ public class DatabaseCache {
      * @throws NoRecordException
      */
     public <T> List<T> find() throws NoTagException, NoRecordException {
-        List<T> records = new ArrayList<T>();
+        List<T> records = new ArrayList<>();
         Map<Integer, T> recordMap = getInsertRecord(records);
 
-        List<T> dataList = new ArrayList<T>();
+        List<T> dataList = new ArrayList<>();
 
         updateRecord(recordMap);
 
@@ -216,7 +216,7 @@ public class DatabaseCache {
 
         Set<Integer> indexSet = recordMap.keySet();
         for (int index : indexSet) {
-            T data = (T) recordMap.get(index);
+            T data = recordMap.get(index);
             Field[] fields = data.getClass().getDeclaredFields();
             for (Field field : fields) {
                 if (field.getName().equals(queryColumn)) {
@@ -226,32 +226,32 @@ public class DatabaseCache {
                         if (type.equals("String") || type.contains("String")) {
                             String columnData = (String) field.get(data);
                             if (columnData.equals((String) queryValue)) {
-                                dataList.add((T) recordMap.get(index));
+                                dataList.add(recordMap.get(index));
                             }
                         } else if (type.equals("Integer") || type.equals("int")) {
                             int columnData = field.getInt(data);
                             if (columnData == (int) queryValue) {
-                                dataList.add((T) recordMap.get(index));
+                                dataList.add(recordMap.get(index));
                             }
                         } else if (type.equals("Long") || type.equals("long")) {
                             long columnData = field.getLong(data);
                             if (columnData == (long) queryValue) {
-                                dataList.add((T) recordMap.get(index));
+                                dataList.add(recordMap.get(index));
                             }
                         } else if (type.equals("Double") || type.equals("double")) {
                             double columnData = field.getDouble(data);
                             if (columnData == (double) queryValue) {
-                                dataList.add((T) recordMap.get(index));
+                                dataList.add(recordMap.get(index));
                             }
                         } else if (type.equals("Float") || type.equals("float")) {
                             int columnData = field.getInt(data);
                             if (columnData == (int) queryValue) {
-                                dataList.add((T) recordMap.get(index));
+                                dataList.add(recordMap.get(index));
                             }
                         } else if (type.equals("Short") || type.equals("short")) {
                             int columnData = field.getInt(data);
                             if (columnData == (int) queryValue) {
-                                dataList.add((T) recordMap.get(index));
+                                dataList.add(recordMap.get(index));
                             }
                         }
                     } catch (IllegalAccessException e) {
@@ -270,7 +270,7 @@ public class DatabaseCache {
      * @throws com.zwb.args.dbpratice.exception.BaseSQLiteException
      */
     private void readXml(Context context) throws BaseSQLiteException {
-        tableSet = new HashSet<String>();
+        tableSet = new HashSet<>();
         InputStream in = null;
         try {
             in = context.getResources()
@@ -309,7 +309,7 @@ public class DatabaseCache {
         } catch (Exception e) {
             LogUtil.e(e.toString());
         } finally {
-            List<String> tableList = new ArrayList<String>();
+            List<String> tableList = new ArrayList<>();
             for (String table : tableSet) {
                 tableList.add(table);
             }
@@ -328,7 +328,7 @@ public class DatabaseCache {
      */
     public <T> T find(String column, Class<T> clazz) throws NoTagException, NoRecordException {
         updateTag = tableClazz.getSimpleName().toLowerCase() + "_query_update_" + column;
-        List<T> records = new ArrayList<T>();
+        List<T> records = new ArrayList<>();
         Map<Integer, T> recordMap = getInsertRecord(records);
 
         updateRecord(recordMap);
@@ -554,8 +554,8 @@ public class DatabaseCache {
      */
     public <T> List<T> readFromDb(Class<T> clazz) throws NoTableException {
         Field[] fields = clazz.getDeclaredFields();
-        List<String> fieldNames = new ArrayList<String>();
-        Map<String, String> types = new HashMap<String, String>();
+        List<String> fieldNames = new ArrayList<>();
+        Map<String, String> types = new HashMap<>();
         for (Field field : fields) {
             fieldNames.add(field.getName());
             if (field.isAnnotationPresent(ColumnType.class)) {
@@ -588,7 +588,7 @@ public class DatabaseCache {
      * @return 表对象的List
      */
     private <T> List<T> getList(Class<T> clazz, Cursor cursor, List<Method> methods, List<String> fieldNames, Field[] fields, Map<String, String> types) {
-        List<T> list = new ArrayList<T>();
+        List<T> list = new ArrayList<>();
         Constructor<?> constructor = findBestSuitConstructor(clazz);
         Set<String> keySet = types.keySet();
         while (cursor.moveToNext()) {
@@ -696,7 +696,7 @@ public class DatabaseCache {
      */
     private List<Method> getSetMethods(Class clazz) {
         Method[] allMethods = clazz.getMethods();
-        List<Method> setMethods = new ArrayList<Method>();
+        List<Method> setMethods = new ArrayList<>();
         for (Method method : allMethods) {
             String name = method.getName();
 
@@ -715,7 +715,7 @@ public class DatabaseCache {
      * @return 表的Set
      */
     public Set<Class<?>> getTableSet() {
-        Set<Class<?>> tableClazz = new HashSet<Class<?>>();
+        Set<Class<?>> tableClazz = new HashSet<>();
         Set<String> tableSet = helper.getTableSet();
         for (String table : tableSet) {
             try {

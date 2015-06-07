@@ -2,9 +2,8 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
+      <module fileurl="file://$PROJECT_DIR$/EventStreamDB.iml" filepath="$PROJECT_DIR$/EventStreamDB.iml" />
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
-      <module fileurl="file://$PROJECT_DIR$/eventDB.iml" filepath="$PROJECT_DIR$/eventDB.iml" />
     </modules>
   </component>
 </project>
-

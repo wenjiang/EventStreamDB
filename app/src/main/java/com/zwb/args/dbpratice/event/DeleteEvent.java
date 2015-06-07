@@ -20,7 +20,7 @@ public class DeleteEvent extends BaseDataChangeEvent {
     private Object value;
 
     public DeleteEvent() {
-        dataMap = new HashMap<Integer, Object>();
+        dataMap = new HashMap<>();
     }
 
     @Override

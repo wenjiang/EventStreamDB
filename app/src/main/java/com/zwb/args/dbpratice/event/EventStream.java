@@ -16,10 +16,10 @@ public class EventStream {
     private Map<Class<?>, Map<Integer, Object>> tableMap;
 
     private EventStream() {
-        eventMap = new HashMap<String, BaseEvent>();
-        tableMap = new HashMap<Class<?>, Map<Integer, Object>>();
-        insertEventMap = new HashMap<String, BaseEvent>();
-        updateEventMap = new HashMap<String, BaseEvent>();
+        eventMap = new HashMap<>();
+        tableMap = new HashMap<>();
+        insertEventMap = new HashMap<>();
+        updateEventMap = new HashMap<>();
     }
 
     /**
@@ -113,7 +113,7 @@ public class EventStream {
     public <T> void insertData(Class<?> tableClazz, int index, T record) {
         Map<Integer, Object> recordMap = tableMap.get(tableClazz);
         if (recordMap == null) {
-            recordMap = new HashMap<Integer, Object>();
+            recordMap = new HashMap<>();
         }
 
         recordMap.put(index, record);
