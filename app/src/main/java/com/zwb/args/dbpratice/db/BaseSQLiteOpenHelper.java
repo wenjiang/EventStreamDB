@@ -115,22 +115,28 @@ public class BaseSQLiteOpenHelper extends SQLiteOpenHelper {
     private void createTable(SQLiteDatabase db) {
         SharedPreferencesManager.init(context);
         List<String> oldTableList = SharedPreferencesManager.getInstance().getListString("tables");
+        DatabaseCache cache = DatabaseCache.getInstance();
+        Set<String> tableSet = cache.getTableName();
         if (oldTableList.size() != 0) {
 
             for (String table : oldTableList) {
-                if (!DatabaseCache.tableSet.contains(table)) {
+                if (!tableSet.contains(table)) {
                     dropTable(db, table);
                 }
             }
 
-            for (String table : DatabaseCache.tableSet) {
+            for (String table : tableSet) {
                 if (!oldTableList.contains(table)) {
                     createTable(db, table);
                 }
             }
+        } else {
+            for (String table : tableSet) {
+                createTable(db, table);
+            }
         }
         List<String> tableList = new ArrayList<>();
-        for (String table : DatabaseCache.tableSet) {
+        for (String table : tableSet) {
             BaseTable newEntity = null;
             try {
                 newEntity = (BaseTable) (Class.forName(table).newInstance());
@@ -149,7 +155,11 @@ public class BaseSQLiteOpenHelper extends SQLiteOpenHelper {
 
         SharedPreferencesManager.getInstance().putListString("tables", tableList);
 
-        for (String tableEntity : DatabaseCache.tableSet) {
+        int version = SharedPreferencesManager.getInstance().getInt("version");
+        if (version == 0 || cache.getVersion() <= version) {
+            return;
+        }
+        for (String tableEntity : tableSet) {
             try {
                 BaseTable entity = (BaseTable) (Class.forName(tableEntity).newInstance());
                 db.beginTransaction();
@@ -262,14 +272,5 @@ public class BaseSQLiteOpenHelper extends SQLiteOpenHelper {
             String name = cursor.getString(0);
             LogUtil.e(name);
         }
-    }
-
-    /**
-     * 获取Table的Set
-     *
-     * @return Table的Set
-     */
-    public Set<String> getTableSet() {
-        return DatabaseCache.tableSet;
     }
 }

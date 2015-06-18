@@ -17,7 +17,8 @@ public class CustomApplication extends Application {
     public void onCreate() {
         super.onCreate();
 
-        DatabaseCache cache = DatabaseCache.getInstance(this);
+        DatabaseCache cache = DatabaseCache.getInstance();
+        cache.init(this);
         SharedPreferencesManager.init(this);
         Set<Class<?>> tableSet = cache.getTableSet();
         for (Class clazz : tableSet) {

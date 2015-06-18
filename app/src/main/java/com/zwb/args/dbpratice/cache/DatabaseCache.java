@@ -47,24 +47,19 @@ import java.util.Set;
 public class DatabaseCache {
     private static DatabaseCache cache;
     private Class<?> tableClazz;
-    private String updateTag;
-    private String insertTag;
     private Object queryValue;
     private String queryColumn;
-    private String queryTag;
     private Set<String> insertTagSet;
     private Set<String> updateTagSet;
     private Map<String, BaseEvent> insertEventMap;
     private Map<String, BaseEvent> updateEventMap;
-    private Context context;
     private SQLiteDatabase db;
     private BaseSQLiteOpenHelper helper;
     private String dbName;
     private int version;
-    public static Set<String> tableSet;
+    private Set<String> tableSet;
 
-    private DatabaseCache(Context context) {
-        this.context = context;
+    public void init(Context context) {
         insertEventMap = EventStream.getInstance().getInsertEventMap();
         insertTagSet = insertEventMap.keySet();
         updateEventMap = EventStream.getInstance().getUpdateEventMap();
@@ -85,9 +80,9 @@ public class DatabaseCache {
      *
      * @return DatabaseCache的单例
      */
-    public static DatabaseCache getInstance(Context context) {
+    public static DatabaseCache getInstance() {
         if (cache == null) {
-            cache = new DatabaseCache(context);
+            cache = new DatabaseCache();
         }
 
         return cache;
@@ -102,9 +97,6 @@ public class DatabaseCache {
      */
     public <T> DatabaseCache from(Class<T> clazz) {
         this.tableClazz = clazz;
-        updateTag = tableClazz.getSimpleName().toLowerCase() + "_query_update_";
-        insertTag = tableClazz.getSimpleName().toLowerCase() + "_query_insert_";
-        queryTag = tableClazz.getSimpleName().toLowerCase() + "_query";
         return this;
     }
 
@@ -308,11 +300,6 @@ public class DatabaseCache {
             }
         } catch (Exception e) {
             LogUtil.e(e.toString());
-        } finally {
-            List<String> tableList = new ArrayList<>();
-            for (String table : tableSet) {
-                tableList.add(table);
-            }
         }
     }
 
@@ -327,7 +314,6 @@ public class DatabaseCache {
      * @throws NoRecordException
      */
     public <T> T find(String column, Class<T> clazz) throws NoTagException, NoRecordException {
-        updateTag = tableClazz.getSimpleName().toLowerCase() + "_query_update_" + column;
         List<T> records = new ArrayList<>();
         Map<Integer, T> recordMap = getInsertRecord(records);
 
@@ -716,7 +702,6 @@ public class DatabaseCache {
      */
     public Set<Class<?>> getTableSet() {
         Set<Class<?>> tableClazz = new HashSet<>();
-        Set<String> tableSet = helper.getTableSet();
         for (String table : tableSet) {
             try {
                 Class clazz = Class.forName(table);
@@ -727,5 +712,23 @@ public class DatabaseCache {
         }
 
         return tableClazz;
+    }
+
+    /**
+     * 获取版本号
+     *
+     * @return
+     */
+    public int getVersion() {
+        return version;
+    }
+
+    /**
+     * 获取表的名字
+     *
+     * @return
+     */
+    public Set<String> getTableName() {
+        return tableSet;
     }
 }

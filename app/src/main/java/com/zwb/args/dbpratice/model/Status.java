@@ -7,7 +7,7 @@ import com.zwb.args.dbpratice.annotation.Table;
 /**
  * Created by pc on 2015/4/8.
  */
-@Table(table = "status")
+@Table(table = "Status")
 public class Status extends BaseTable {
     @Column
     private String name;

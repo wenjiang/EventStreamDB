@@ -50,7 +50,7 @@ public class SampleActivity extends ActionBarActivity {
             LogUtil.e(e.toString());
         }
 
-        DatabaseCache cache = DatabaseCache.getInstance(this);
+        DatabaseCache cache = DatabaseCache.getInstance();
         try {
             cache.insertToDb(Status.class);
             cache.insertToDb(Status.class);
